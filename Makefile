@@ -7,7 +7,7 @@ test:
 	pytest -q
 
 lint:
-	ruff check . && ruff format --check .
+	ruff check src tests && ruff format --check src tests
 
 eval:            ## offline baseline eval, gated
 	llm-eval run --name extractive --baseline baselines/extractive.summary.json

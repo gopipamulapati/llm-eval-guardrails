@@ -14,7 +14,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -e ".[dev]"
-      - run: ruff check . && ruff format --check .
+      - run: ruff check src tests && ruff format --check src tests
       - run: pytest -q
 
   eval-gate:
