@@ -1,0 +1,48 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      - run: ruff check . && ruff format --check .
+      - run: pytest -q
+
+  eval-gate:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e .
+      # Offline by default. Set OPENAI_API_KEY as a repo secret and switch to
+      # `--target llm --judge llm` to evaluate a real model.
+      - name: Run eval and gate against thresholds + committed baseline
+        id: eval
+        run: |
+          set +e
+          llm-eval run --name pr --baseline baselines/extractive.summary.json > eval.md
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+          cat eval.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Comment report on PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --body-file eval.md --edit-last || gh pr comment ${{ github.event.pull_request.number }} --body-file eval.md
+      - name: Fail on regression
+        if: steps.eval.outputs.exit != '0'
+        run: exit 1

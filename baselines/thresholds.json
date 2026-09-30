@@ -1,0 +1,7 @@
+{
+  "faithfulness": 0.9,
+  "refusal_correct": 0.9,
+  "judge_score": 0.75,
+  "context_recall": 0.8,
+  "error_rate": 0.0
+}
